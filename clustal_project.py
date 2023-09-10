@@ -69,25 +69,42 @@ with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
     def matrice_dist(id_sequence, gap, blosum):
         matrice_dist = np.zeros((len(id_sequence), len(id_sequence)))
         for i in range(1, len(id_sequence)):
-            for j in range(0, i ):
-                print(i,j)
-                
+            for j in range(0, i):
+                print(i, j)
                 matrice_dist[i][j] = needlman(id_sequence[i], 
                                               id_sequence[j], 
                                               gap = gap, 
                                               blosum = blosum)[0]
-                print(matrice_dist[i][j])
-                print(matrice_dist)
-        print(matrice_dist)
+        return matrice_dist
+    
+    def value_max():
+        matrice_initial = matrice_dist(id_sequence=id_sequence,gap = -5, blosum=blosum)
+        value_max= matrice_initial[1][0]
+        for i in range(1, len(id_sequence)):
+            for j in range(0, i):
+                if (matrice_initial[i][j] > value_max):
+                    value_max = matrice_initial[i][j]
+                    max_i = i
+                    max_j = j
+        return max_i,max_j,value_max
+
+    def shaft_distance():
+        
+
+
+
+    def UPGMA():
+        hu=""
             
 
 
 #score = needlman(key_sequence1='MVHLTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH', key_sequence2='MVHLTAHHFGLWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLNALAHKYH', gap = - 5, blosum=blosum)
-score = needlman(id_sequence[1], id_sequence[0], gap = -5, blosum=blosum)
-print(score[0])
+# score = needlman(id_sequence[1], id_sequence[0], gap = -5, blosum=blosum)
+# print(score[0])
 
 #alignement = alignement_seq(id_sequence[0], id_sequence[1], gap = -5, score = score[1], blosum=blosum)
 #print("L'alignement optimal est : " + "\n","".join(alignement[0]), "".join(alignement[1]))
 
-matrice_dist(id_sequence=id_sequence,gap = -5, blosum=blosum)
+#matrice_dist = matrice_dist(id_sequence=id_sequence,gap = -5, blosum=blosum)
+max = UPGMA()
  
