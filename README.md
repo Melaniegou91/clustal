@@ -33,4 +33,6 @@ If you execute the command line shown above as an example you should obtain the 
 ![front-page](phylogenetic_tree.png)
 
 
-
+The sequence ids represent your sequences in the order they are in the file.
+You must add +1 to the id to find your sequence.
+That is to say that id 0 corresponds to sequence 1 in the file, id 1 to the second sequence and so on
