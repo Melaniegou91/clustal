@@ -3,9 +3,19 @@ import pandas as pd
 import numpy as np
 from scipy.cluster.hierarchy import linkage, dendrogram
 import matplotlib.pyplot as plt
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--file_name", help="give the file name")
+parser.add_argument("-g", "--gap", default=-5,
+                    help="gap penalty score",
+                    type = int)
+args = parser.parse_args()
+file = args.file_name
+gap = args.gap
 
 
-with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
+with open(file, "r") as fasta_file:  # Ouverture du fichier
     # Dictionary containing the sequences
     record_dict = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
 
@@ -222,7 +232,7 @@ with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
 
 
 
-matrice = matrice_score(id_sequence=id_sequence, gap=-5, blosum=blosum)
+matrice = matrice_score(id_sequence=id_sequence, gap=gap, blosum=blosum)
 dist_matrix = dist_matrix(matrice)
 embranchement_sequentiel(dist_matrix)
 
