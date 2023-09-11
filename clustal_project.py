@@ -1,23 +1,27 @@
 from Bio import SeqIO
 import pandas as pd
 import numpy as np
-from scipy.cluster.hierarchy import linkage,dendrogram
+from scipy.cluster.hierarchy import linkage, dendrogram
+import matplotlib.pyplot as plt
 
 
 with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
     # Dictionary containing the sequences
     record_dict = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
-    
-    # reading blosum 62 matrix 
-    blosum = pd.read_csv("blossum62.txt") 
 
-    # List containing sequence keys 
-    id_sequence = list(record_dict.keys())  
-    def needlman(key_sequence1, key_sequence2, gap, blosum):
+    # reading blosum 62 matrix
+    blosum = pd.read_csv("blossum62.txt")
 
+    # List containing sequence keys
+    id_sequence = list(record_dict.keys())
+
+    # 
+    print(f"Votre fichier comporte {len(id_sequence)} séquences")
+
+    def needleman(key_sequence1, key_sequence2, gap, blosum):
         '''
         Needleman algorithm to provide
-        the similarity score for each 
+        the similarity score for each
         pair of sequences
 
         Parameters
@@ -28,7 +32,7 @@ with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
             The keys to the second sequence to study.
         gap : int
             The penality of a gap
-        blosum : matrix
+        blosum : pd.dataframe
             the blosum 62 matrix
 
 
@@ -43,8 +47,8 @@ with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
         value = 0
 
         # Produce a matrix of size (n + 1) * (m + 1)
-        # Where n and m correspond to the lengths of 
-        # the sequences 
+        # Where n and m correspond to the lengths of
+        # the sequences
         matrice = np.zeros((len(sequence1) + 1, len(sequence2) + 1))
         # Add to all the lines in the first column the penalties
         for i in range(1, len(sequence1) + 1):
@@ -55,20 +59,25 @@ with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
         for j in range(1, len(sequence2) + 1):
             matrice[0][j] = value + gap  # Affecte les penalites (lignes)
             value = matrice[0][j]
-        # Allows to calculate the score according 
-        # to the matrix blosum 62 and the penalty due to the gap    
+        # Allows to calculate the score according
+        # to the matrix blosum 62 and the penalty due to the gap
         for i in range(1, len(sequence1) + 1):
             for j in range(1, len(sequence2) + 1):
-                diagonale = matrice[i - 1][j - 1] + blosum[sequence1[i-1]][sequence2[j-1]]
+                diagonale = matrice[i - 1][j - 1] + \
+                    blosum[sequence1[i-1]][sequence2[j-1]]
                 gap_haut = matrice[i - 1][j] + gap
                 gap_gauche = matrice[i][j - 1] + gap
                 # Allows you to select the maximum between the 3 possibilities
-                matrice[i][j] = max(diagonale, gap_haut, gap_gauche)        
-        return matrice[i][j],matrice
+                matrice[i][j] = max(diagonale, gap_haut, gap_gauche)
+        return matrice[i][j], matrice
+
     
-    def alignement_seq(key_sequence1, key_sequence2,gap,score,blosum):
+    def alignement_seq(key_sequence1, key_sequence2, gap, score, blosum):
         '''
-        Algorithm for pairwise alignment
+        The algorithm allows you to start 
+        from the lowest point of the matrix 
+        on the right to go up using the path 
+        worth the highest score
 
         Parameters
         ----------
@@ -78,7 +87,7 @@ with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
             The keys to the second sequence to study.
         gap : int
             The penality of a gap
-        blosum : matrix
+        blosum : pd.DataFrame
             the blosum 62 matrix
 
     Returns
@@ -97,80 +106,127 @@ with open("sequences.fasta", "r") as fasta_file:  # Ouverture du fichier
         alignement2 = ""
 
         while i > 0 and j > 0:
-            if (score[i][j] == score[i - 1][j - 1] + blosum[seq1[i-1]][seq2[j-1]]):
+            # Lets you know if the score comes from the upper left box
+            if (score[i][j] == score[i - 1][j - 1] + blosum[seq1[i]][seq2[j]]): # ?????? -1 de base
                 i = i - 1
                 j = j - 1
-                alignement1+=seq1[i - 1]
-                alignement2+=seq2[j - 1]
+                alignement1 += seq1[i - 1]
+                alignement2 += seq2[j - 1]
 
+            # Allows you to know if the score comes from the box above
             elif (score[i][j] == score[i][j - 1] + gap):
                 j = j - 1
-                alignement1+="-"
-                alignement2+=seq2[j - 1]
+                alignement1 += "-"
+                alignement2 += seq2[j - 1]
 
+            # Allows you to know if the score comes from the box below
             else:
                 i = i - 1
-                alignement1+=seq1[i - 1]
-                alignement2+="-"
+                alignement1 += seq1[i - 1]
+                alignement2 += "-"
         while i > 0:
-            i-=1
+            i -= 1
         while j > 0:
-            j-= 1
+            j -= 1
 
         return alignement1, alignement2
         
     def matrice_score(id_sequence, gap, blosum):
-        matrice_dist = np.zeros((len(id_sequence), len(id_sequence)))
+        '''
+        This algorithm fills the similarity score matrix
+        by filling a square matrix
+        Each box is filled using the Needleman algorithm
+
+        Parameters
+        ----------
+        id_sequence : list
+            The list containing the id of the sequences
+        gap : int
+            The penality of a gap
+        blosum : pd.dataframe
+            The blosum 62 matrix
+
+    Returns
+    -------
+        returns the score matrix
+        '''
+        # Creating a square matrix filled with zeros
+        score_matrix = np.zeros((len(id_sequence), len(id_sequence)))
+        # Browse the boxes of the matrix to compare 
+        # the different sequences
         for i in range(1, len(id_sequence)):
             for j in range(0, i):
-                matrice_dist[i][j] = needlman(id_sequence[i], 
-                                              id_sequence[j], 
-                                              gap = gap, 
-                                              blosum = blosum)[0]
-        print(matrice_dist)
-        return matrice_dist
-    
-    def value_max(matrice):        
-        value_max= matrice[1][0]
-        max_i = 1
-        max_j = 0
-        for i in range(1, len(id_sequence)):
-            for j in range(0, i):
-                if (matrice[i][j] > value_max):
-                    value_max = matrice[i][j]
-                    max_i = i
-                    max_j = j
-        return max_i, max_j, value_max
-    
-    def matrice_dist(matrice_score):
+                # Assigns for each sequence comparison, a similarity score
+                score_matrix[i][j] = needleman(id_sequence[i],
+                                              id_sequence[j],
+                                              gap=gap,
+                                              blosum=blosum)[0]
+        print(f"La matrice de score est : \n {score_matrix}")
+        return score_matrix
+
+    def dist_matrix(score_matrix):
         '''
 
+        This method makes it possible
+         to transform a similarity score matrix 
+         into a distance matrix
+
+        Parameters
+        ----------
+        score_matrix : np.array
+            The score matrix to transform
+
+
+    Returns
+    -------
+        returns the distance matrix
         '''
-        print(matrice_score)
-        maximum = value_max(matrice)[2]
+        matrix_dist = np.zeros((len(score_matrix), len(score_matrix)))
+
+        # Allows you to find the maximum value in the matrix
+        maximum = np.nanmax(score_matrix)
+
+        # Allows you to find the minimum value in the matrix
+        minimum = np.nanmin(score_matrix)
+        # Allows you to loop through all score matrix values 
+        # ​​to transform them into a distance score
         for i in range(1, len(id_sequence)):
             for j in range(0, i):
-                matrice_score[i][j] = 1/ matrice_score[i][j]
-        print(matrice_score)
-        return matrice_score
+                matrix_dist[i][j] = maximum - (score_matrix[i][j] + minimum)
+        return matrix_dist
 
-    def embranchement_sequentiel(dist_matrix) : 
-        dist_matrix = matrice_dist(matrice)
-        print(f"{dist_matrix =}")
-        #distance_matrix_triu = np.triu(dist_matrix)
-        #print(distance_matrix_triu)
-        #dist_matrix = np.array(dist_matrix)
-        print(f"{dist_matrix =}")
-        sequential = linkage(dist_matrix,method = "average")
+    def embranchement_sequentiel(dist_matrix):
+
+        """
+        This method makes it possible to create the phylogenetic tree
+        
+        Parameters
+        ----------
+        dist_matrix : np.array
+            The distance matrix used to make the tree
+
+
+    Returns
+    -------
+        returns the phylogenetic tree
+
+        """
+        print(f"La matrice de distance est : \n \n {dist_matrix }")
+        sequential = linkage(dist_matrix, method="average")
         print(sequential)
+        phylogenetic_tree = dendrogram(sequential)
+        plt.title('phylogenetic tree')
+        plt.xlabel('Sequence ID')
+        plt.ylabel('Distance')
+        plt.show()
 
 
-matrice = matrice_score(id_sequence = id_sequence,gap = -5, blosum=blosum)
-dist_matrix = matrice_dist(matrice)
+
+matrice = matrice_score(id_sequence=id_sequence, gap=-5, blosum=blosum)
+dist_matrix = dist_matrix(matrice)
 embranchement_sequentiel(dist_matrix)
 
 
-    
 '''
     def UPGMA(matrice):
         print(matrice)
@@ -198,34 +254,6 @@ embranchement_sequentiel(dist_matrix)
             #matrice2 = matrice2.drop(columns = [max_j], inplace = True)
             #matrice2 = matrice2.drop(index = [max_i], inplace = True)
             print(matrice2)
-            
-            #matrice 
+
+            #matrice
 '''
-    
-       #clusters.append(clusters[max_i]+clusters[max_j])
-       # tree = []
-       # Permet de calculer la distance entre le groupe et l'arbre 
-       # pos_last_ancestor = maximum / 2
-       # tree.append()
-       #print(matrice, labels,clusters)
-
-    
-
-
-#score = needlman(key_sequence1='MVHLTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH', key_sequence2='MVHLTAHHFGLWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLNALAHKYH', gap = - 5, blosum=blosum)
-# score = needlman(id_sequence[1], id_sequence[0], gap = -5, blosum=blosum)
-# print(score[0])
-
-#alignement = alignement_seq(id_sequence[0], id_sequence[1], gap = -5, score = score[1], blosum=blosum)
-#print("L'alignement optimal est : " + "\n","".join(alignement[0]), "".join(alignement[1]))
-
-
-
-
-
-
-# max = UPGMA(matrice)
-
-
-
- 
