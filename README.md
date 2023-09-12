@@ -30,7 +30,7 @@ You can run the script with the following command :
 The script will open a window containing the phylogenetic tree.
 If you execute the command line shown above as an example you should obtain the following tree
 
-![front-page](phylogenetic_tree.png)
+![front-page](img/phylogenetic_tree.png)
 
 
 The sequence ids represent your sequences in the order they are in the file.
