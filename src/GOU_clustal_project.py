@@ -7,12 +7,18 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--file_name", help="give the file name")
-parser.add_argument("-g", "--gap", default=-5,
-                    help="gap penalty score",
-                    type = int)
+parser.add_argument("--file_matrix_blosum", help="blosum 62 matrix")
+parser.add_argument("--seq1",
+                    help="first sequence",
+                    type=int)
+parser.add_argument("--seq2",
+                    help="second sequence",
+                    type=int)
 args = parser.parse_args()
 file = args.file_name
-gap = args.gap
+blosum = args.file_matrix_blosum
+choice_seq1 = args.seq1
+choice_seq2 = args.seq2
 
 
 with open(file, "r") as fasta_file:  # Ouverture du fichier
@@ -20,12 +26,12 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
     record_dict = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
 
     # reading blosum 62 matrix
-    blosum = pd.read_csv("blossum62.txt")
+    blosum = pd.read_csv(blosum)
 
     # List containing sequence keys
     id_sequence = list(record_dict.keys())
 
-    # 
+    #
     print(f"Votre fichier comporte {len(id_sequence)} séquences")
 
     def needleman(key_sequence1, key_sequence2, gap, blosum):
@@ -80,7 +86,7 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
                 # Allows you to select the maximum between the 3 possibilities
                 matrice[i][j] = max(diagonale, gap_haut, gap_gauche)
         return matrice[i][j], matrice
-        
+
     def matrice_score(id_sequence, gap, blosum):
         '''
         This algorithm fills the similarity score matrix
@@ -102,15 +108,15 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
         '''
         # Creating a square matrix filled with zeros
         score_matrix = np.zeros((len(id_sequence), len(id_sequence)))
-        # Browse the boxes of the matrix to compare 
+        # Browse the boxes of the matrix to compare
         # the different sequences
         for i in range(1, len(id_sequence)):
             for j in range(0, i):
                 # Assigns for each sequence comparison, a similarity score
                 score_matrix[i][j] = needleman(id_sequence[i],
-                                              id_sequence[j],
-                                              gap=gap,
-                                              blosum=blosum)[0]
+                                               id_sequence[j],
+                                               gap=gap,
+                                               blosum=blosum)[0]
         print(f"La matrice de score est : \n {score_matrix}")
         return score_matrix
 
@@ -118,7 +124,7 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
         '''
 
         This method makes it possible
-         to transform a similarity score matrix 
+         to transform a similarity score matrix
          into a distance matrix
 
         Parameters
@@ -138,7 +144,7 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
 
         # Allows you to find the minimum value in the matrix
         minimum = np.nanmin(score_matrix)
-        # Allows you to loop through all score matrix values 
+        # Allows you to loop through all score matrix values
         # ​​to transform them into a distance score
         for i in range(1, len(id_sequence)):
             for j in range(0, i):
@@ -146,10 +152,9 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
         return matrix_dist
 
     def embranchement_sequentiel(dist_matrix):
-
         """
         This method makes it possible to create the phylogenetic tree
-        
+
         Parameters
         ----------
         dist_matrix : np.array
@@ -170,13 +175,13 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
         plt.ylabel('Distance')
         plt.show()
 
-    
-    # 
+    #
+
     def alignement_seq(key_sequence1, key_sequence2, gap, score, blosum):
         '''
-        The algorithm allows you to start 
-        from the lowest point of the matrix 
-        on the right to go up using the path 
+        The algorithm allows you to start
+        from the lowest point of the matrix
+        on the right to go up using the path
         worth the highest score
 
         Parameters
@@ -201,15 +206,15 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
         seq2 = record_dict[key_sequence2].seq
         print(seq2)
         # i and j contain the length of the sequences
-        i = len(seq1)  
-        j = len(seq2) 
+        i = len(seq1)
+        j = len(seq2)
         # Empty sequence initialization
         alignement1 = ""
         alignement2 = ""
 
         while i > 1 and j > 1:
             # Lets you know if the score comes from the upper left box
-            if (score[i][j] == score[i - 1][j - 1] + blosum[seq1[i - 1]][seq2[j - 1]]): # ?????? -1 de base
+            if (score[i][j] == score[i - 1][j - 1] + blosum[seq1[i - 1]][seq2[j - 1]]): 
                 i = i - 1
                 j = j - 1
                 alignement1 += seq1[i - 1]
@@ -234,19 +239,22 @@ with open(file, "r") as fasta_file:  # Ouverture du fichier
                 i -= 1
             if j > 0:
                 j -= 1"""
+        alignement1 = "".join(reversed(alignement1))
+        alignement2 = "".join(reversed(alignement2))
+        nb_gap = alignement2.count("-")/len(alignement2)
+        print(f"le nombre de gap dans l'alignement 2 ets : {nb_gap}")
 
         print(f"{alignement1=}")
         print(f"{alignement2=}")
         return alignement1, alignement2
 
-matrice = matrice_score(id_sequence=id_sequence, gap=gap, blosum=blosum)
+matrice = matrice_score(id_sequence=id_sequence, gap=-5, blosum=blosum)
 dist_matrix = dist_matrix(matrice)
 embranchement_sequentiel(dist_matrix)
-score = needleman(id_sequence[0], id_sequence[1], gap = -5, blosum=blosum)
-alignement_seq(id_sequence[0], id_sequence[1], gap = -5, score = score[1], blosum=blosum)
-
-
-
+score = needleman(id_sequence[choice_seq1],
+                  id_sequence[choice_seq2], gap=-5, blosum=blosum)
+alignement_seq(id_sequence[choice_seq1], id_sequence[choice_seq2],
+               gap=-5, score=score[1], blosum=blosum)
 
 
 '''

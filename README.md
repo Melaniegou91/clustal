@@ -22,15 +22,17 @@ URL : https://www.uniprot.org/
 ## second step
 The script uses the following parameters : 
 
-- --gap  This parameter corresponds to the gap penalty. By default it is -5.
 - --file_name The name of your file containing the sequences
+- --seq1 Indicate the first sequence you want to compare for alignment: 0 for the first sequence, 1 for the second sequence...
+- --seq2 Indicate the second sequence you want to compare for alignment: 0 for the first sequence, 1 for the second sequence...
+- --file_matrix_blosum Indicate the path leading to your file containing the blosum62 sequence
 
 ### Example
 
 The sequences.fasta file is present in the github directory
 You can run the script with the following command : 
 ```{R}
- python clustal_project.py --file_name sequences.fasta --gap -2
+ python src/GOU_clustal_project.py --file_name data/sequences.fasta --seq1 0 --seq2 1 --file_matrix_blosum data/blosum62.txt
 ```
 
 ## Results
@@ -43,4 +45,8 @@ If you execute the command line shown above as an example you should obtain the 
 
 The sequence ids represent your sequences in the order they are in the file.
 You must add +1 to the id to find your sequence.
-That is to say that id 0 corresponds to sequence 1 in the file, id 1 to the second sequence and so on
+That is to say that id 0 corresponds to sequence 1 in the file, id 1 to the second sequence and so on.
+
+The script returns the following alignment :
+
+![front-page](img/alignement.png)
