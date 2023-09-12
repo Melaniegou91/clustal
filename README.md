@@ -3,7 +3,15 @@ Short project whose aim is to reprogram the clustal software
 
 This script allows you to display a phylogenetic tree in order to make a multiple alignment.
 Unfortunately, it does not allow multiple alignment, it only displays the tree
+## How to download my conda environment
 
+
+To download the conda environment from the environment.yml file you can use the following command:
+
+
+```{}
+conda env create -f environment.yml
+```
 ## First step 
 
 To start, you need to create a fasta file containing the different sequences you want to compare.
